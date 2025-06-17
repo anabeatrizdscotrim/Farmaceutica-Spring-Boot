@@ -15,7 +15,6 @@ public class Beneficios {
     private double vRefeicao;
     private double pSaude;
     private double pOdontologico;
-    private double bonificacao;
 
     public Long getId() {
         return id;
@@ -23,6 +22,10 @@ public class Beneficios {
 
     public Funcionario getFuncionario() {
         return funcionario;
+    }
+
+    public void setFuncionario(Funcionario funcionario) {
+        this.funcionario = funcionario;
     }
 
     public double getvTransporte() {
@@ -63,13 +66,5 @@ public class Beneficios {
 
     public void setpOdontologico(double pOdontologico) {
         this.pOdontologico = pOdontologico;
-    }
-
-    public double getBonificacao() {
-        return bonificacao;
-    }
-
-    public void setBonificacao(double bonificacao) {
-        this.bonificacao = bonificacao;
     }
 }

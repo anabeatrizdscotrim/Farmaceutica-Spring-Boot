@@ -1,20 +1,25 @@
 package com.farmaceutica.demo.services;
 
+import com.farmaceutica.demo.models.Beneficios;
 import com.farmaceutica.demo.models.Funcionario;
+import com.farmaceutica.demo.repository.BeneficiosRepository;
 import com.farmaceutica.demo.repository.FuncionarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class FuncionarioService {
     @Autowired
     FuncionarioRepository funcionarioRepository;
+
+    @Autowired
+    private BeneficiosRepository beneficiosRepository;
+
+    @Autowired
+    private BeneficiosService beneficiosService;
 
     @Transactional
     public Funcionario adicionarFuncionario(Funcionario funcionario) {
@@ -23,44 +28,32 @@ public class FuncionarioService {
         String identificacao = String.format("EMP%05d", funcionarioSalvo.getIdFuncionario());
         funcionarioSalvo.setIdentificacao(identificacao);
 
-        return funcionarioRepository.save(funcionarioSalvo);
-    }
+        funcionarioSalvo = funcionarioRepository.save(funcionarioSalvo);
 
-    @Transactional
-    public Funcionario atualizarFuncionario(Long idFuncionario, Funcionario funcionarioAtualizado) {
-        Funcionario existente = funcionarioRepository.findById(idFuncionario)
-                .orElseThrow(() -> new IllegalArgumentException("Funcionário não encontrado com ID: " + idFuncionario));
+        Beneficios beneficios = beneficiosRepository
+                .findByFuncionario_IdFuncionario(funcionarioSalvo.getIdFuncionario())
+                .orElse(new Beneficios());
 
+        beneficios.setFuncionario(funcionarioSalvo);
 
-        if (funcionarioAtualizado.getNome() != null && !funcionarioAtualizado.getNome().isEmpty()) {
-            existente.setNome(funcionarioAtualizado.getNome());
-        }
-        if (funcionarioAtualizado.getIdade() != 0) { // Para números, basta verificar se não é nulo
-            existente.setIdade(funcionarioAtualizado.getIdade());
-        }
-        if (funcionarioAtualizado.getGenero() != null && !funcionarioAtualizado.getGenero().isEmpty()) {
-            existente.setGenero(funcionarioAtualizado.getGenero());
-        }
-        if (funcionarioAtualizado.getSetor() != null && !funcionarioAtualizado.getSetor().isEmpty()) {
-            existente.setSetor(funcionarioAtualizado.getSetor());
-        }
-        if (funcionarioAtualizado.getSalarioBase() != 0) {
-            existente.setSalarioBase(funcionarioAtualizado.getSalarioBase());
-        }
-        if (funcionarioAtualizado.getSalarioLiquid() != 0) {
-            existente.setSalarioLiquid(funcionarioAtualizado.getSalarioLiquid());
-        }
+        beneficiosService.ajustarBeneficiosPorCargo(funcionarioSalvo, beneficios);
+        beneficiosService.calcularValeTransporte(funcionarioSalvo, beneficios);
+        processarFinanceiroFuncionario(funcionarioSalvo, beneficios);
 
 
-        return funcionarioRepository.save(existente);
+        beneficiosRepository.save(beneficios);
+
+
+        return funcionarioSalvo;
     }
 
     public void removerFuncionario(Long idFuncionario) {
-        funcionarioRepository.deleteById(idFuncionario);
-    }
+        Optional<Beneficios> beneficiosOptional = beneficiosRepository.findByFuncionario_IdFuncionario(idFuncionario);
+        if (beneficiosOptional.isPresent()) {
+            beneficiosRepository.delete(beneficiosOptional.get());
+        }
 
-    public List<Funcionario> listarFucnionariosPorSetor(String setor) {
-        return funcionarioRepository.findBySetor(setor);
+        funcionarioRepository.deleteById(idFuncionario);
     }
 
     public List<Funcionario> listarTodosFuncionarios() {
@@ -72,11 +65,70 @@ public class FuncionarioService {
     }
 
     public Funcionario salvar(Funcionario funcionario) {
-        return funcionarioRepository.save(funcionario);
+        Beneficios beneficios = beneficiosRepository
+                .findByFuncionario_IdFuncionario(funcionario.getIdFuncionario())
+                .orElse(new Beneficios());
+
+        beneficios.setFuncionario(funcionario);
+
+        beneficiosService.ajustarBeneficiosPorCargo(funcionario, beneficios);
+        beneficiosService.calcularValeTransporte(funcionario, beneficios);
+
+        processarFinanceiroFuncionario(funcionario, beneficios);
+
+        funcionarioRepository.save(funcionario);
+        beneficiosRepository.save(beneficios);
+        return funcionario;
     }
 
     public List<Funcionario> filtrarFuncionarios(String termo) {
         return funcionarioRepository.findByNomeContainingIgnoreCaseOrSetorContainingIgnoreCase(termo, termo);
     }
+
+    public Map<String, Object> buscarFuncionarioComBeneficios(Long id) {
+        Optional<Funcionario> funcionarioOpt = funcionarioRepository.findById(id);
+        if (funcionarioOpt.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Funcionario funcionario = funcionarioOpt.get();
+        Beneficios beneficios = beneficiosRepository.findByFuncionario_IdFuncionario(id).orElse(null);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("funcionario", funcionario);
+        response.put("beneficios", beneficios);
+
+        return response;
+    }
+
+    public void processarFinanceiroFuncionario(Funcionario funcionario, Beneficios beneficios) {
+        calcularImpostoRenda(funcionario);
+        calcularSalarioLiquido(funcionario);
+    }
+
+    public void calcularImpostoRenda(Funcionario funcionario) {
+        double baseCalculo = funcionario.getSalarioBase() + funcionario.getBonificacao();
+        double imposto;
+
+        if (baseCalculo <= 2428.80) {
+            imposto = 0;
+        } else if (baseCalculo <= 2826.65) {
+            imposto = (baseCalculo * 0.075) - 182.16;
+        } else if (baseCalculo <= 3751.05) {
+            imposto = (baseCalculo * 0.15) - 394.16;
+        } else if (baseCalculo <= 4664.68) {
+            imposto = (baseCalculo * 0.225) - 675.49;
+        } else {
+            imposto = (baseCalculo * 0.275) - 908.75;
+        }
+
+        funcionario.setImposto(Math.max(imposto, 0));
+    }
+
+    public void calcularSalarioLiquido(Funcionario funcionario) {
+        double liquido = funcionario.getSalarioBase() + funcionario.getBonificacao() - funcionario.getImposto();
+        funcionario.setSalarioLiquid(liquido);
+    }
+
 
 }

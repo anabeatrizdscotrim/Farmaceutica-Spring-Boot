@@ -175,6 +175,54 @@
             background-color: #c82333;
         }
 
+        .modal-custom {
+            display: none; /* Oculto por padrão */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* fundo escuro */
+        }
+
+        .modal-content-custom {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .modal-content-custom p {
+            margin-bottom: 10px;
+        }
+
+        .modal-content-custom h3,
+        .modal-content-custom h4 {
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal-content-custom p:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .close {
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -242,7 +290,6 @@
 
 <script>
 
-    // 🔄 Carregar Conteúdo Dinâmico
     function loadContent(url) {
         fetch(url)
             .then(response => {
@@ -251,20 +298,18 @@
             })
             .then(html => {
                 document.getElementById("main-content").innerHTML = html;
-                inicializarEventos(); // ← Importante!
+                inicializarEventos();
             })
             .catch(err => {
                 document.getElementById("main-content").innerHTML = "<p>Erro ao carregar o conteúdo.</p>";
             });
     }
 
-    // 🔍 Filtrar
     function filtrar() {
         const termo = document.getElementById("termo").value;
         loadContent(`/funcionarios/filtrar?termo=${encodeURIComponent(termo)}`);
     }
 
-    // ❌ Remover
     let idParaRemover = null;
 
     function remover(id) {
@@ -292,7 +337,6 @@
         });
     }
 
-    // 🔵 Modal Adicionar
     function abrirModalAdicionar() {
         document.getElementById('modal-adicionar').style.display = 'flex';
     }
@@ -301,18 +345,19 @@
         document.getElementById('modal-adicionar').style.display = 'none';
     }
 
-    // 🟡 Modal Editar
     function abrirModalEditar(id) {
         fetch(`/funcionarios/buscar/${id}`)
             .then(response => response.json())
             .then(data => {
-                document.getElementById('id-editar').value = data.idFuncionario;
-                document.getElementById('nome-editar').value = data.nome;
-                document.getElementById('idade-editar').value = data.idade;
-                document.getElementById('genero-editar').value = data.genero;
-                document.getElementById('setor-editar').value = data.setor;
-                document.getElementById('salarioBase-editar').value = data.salarioBase;
-                document.getElementById('salarioLiquid-editar').value = data.salarioLiquid;
+                const f = data.funcionario;
+
+                document.getElementById('id-editar').value = f.idFuncionario;
+                document.getElementById('nome-editar').value = f.nome;
+                document.getElementById('idade-editar').value = f.idade;
+                document.getElementById('genero-editar').value = f.genero;
+                document.getElementById('setor-editar').value = f.setor;
+                document.getElementById('salarioBase-editar').value = f.salarioBase;
+                document.getElementById('bonificacao-editar').value = (f && f.bonificacao !== null && f.bonificacao !== undefined) ? f.bonificacao : '0.00';
 
                 document.getElementById('modal-editar').style.display = 'flex';
             });
@@ -322,9 +367,7 @@
         document.getElementById('modal-editar').style.display = 'none';
     }
 
-    // 🚀 Inicializar Eventos Sempre Após Carregar Conteúdo
     function inicializarEventos() {
-        // 🔵 Adicionar
         const formAdicionar = document.getElementById('form-adicionar');
         if (formAdicionar) {
             formAdicionar.addEventListener('submit', function (e) {
@@ -337,7 +380,6 @@
                     setor: document.getElementById('setor-adicionar').value,
                     senha: document.getElementById('senha-adicionar').value,
                     salarioBase: document.getElementById('salarioBase-adicionar').value,
-                    salarioLiquid: document.getElementById('salarioLiquid-adicionar').value,
                 };
 
                 fetch('/funcionarios/salvar', {
@@ -353,7 +395,6 @@
             });
         }
 
-        // 🟡 Editar
         const formEditar = document.getElementById('form-editar');
         if (formEditar) {
             formEditar.addEventListener('submit', function (e) {
@@ -366,7 +407,7 @@
                     genero: document.getElementById('genero-editar').value,
                     setor: document.getElementById('setor-editar').value,
                     salarioBase: document.getElementById('salarioBase-editar').value,
-                    salarioLiquid: document.getElementById('salarioLiquid-editar').value,
+                    bonificacao: document.getElementById('bonificacao-editar').value,
                 };
 
                 fetch('/funcionarios/editar', {
@@ -381,6 +422,51 @@
                 });
             });
         }
+    }
+
+    function visualizarFuncionario(id) {
+        fetch(`/funcionarios/buscar/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const f = data.funcionario;
+                const b = data.beneficios; // Os outros benefícios ainda podem vir aqui
+
+                document.getElementById('f-nome').textContent = f.nome;
+                document.getElementById('f-idade').textContent = f.idade;
+                document.getElementById('f-genero').textContent = f.genero;
+                document.getElementById('f-setor').textContent = f.setor;
+
+                document.getElementById('f-salarioBase').textContent = (f.salarioBase !== undefined && f.salarioBase !== null) ? f.salarioBase.toFixed(2) : '0.00';
+                document.getElementById('f-salarioLiquid').textContent = (f.salarioLiquid !== undefined && f.salarioLiquid !== null) ? f.salarioLiquid.toFixed(2) : '0.00';
+                document.getElementById('f-imposto').textContent = (f.imposto !== undefined && f.imposto !== null) ? f.imposto.toFixed(2) : '0.00';
+                document.getElementById('f-bonificacao').textContent = (f.bonificacao !== undefined && f.bonificacao !== null) ? f.bonificacao.toFixed(2) : '0.00';
+
+                if (b) {
+                    document.getElementById('b-transporte').textContent = (b.vTransporte !== undefined && b.vTransporte !== null) ? b.vTransporte.toFixed(2) : '0.00';
+                    document.getElementById('b-alimentacao').textContent = (b.vAlimentacao !== undefined && b.vAlimentacao !== null) ? b.vAlimentacao.toFixed(2) : '0.00';
+                    document.getElementById('b-refeicao').textContent = (b.vRefeicao !== undefined && b.vRefeicao !== null) ? b.vRefeicao.toFixed(2) : '0.00';
+                    document.getElementById('b-saude').textContent = (b.pSaude !== undefined && b.pSaude !== null) ? b.pSaude.toFixed(2) : '0.00';
+                    document.getElementById('b-odonto').textContent = (b.pOdontologico !== undefined && b.pOdontologico !== null) ? b.pOdontologico.toFixed(2) : '0.00';
+                } else {
+                    document.getElementById('b-transporte').textContent = '0.00';
+                    document.getElementById('b-alimentacao').textContent = '0.00';
+                    document.getElementById('b-refeicao').textContent = '0.00';
+                    document.getElementById('b-saude').textContent = '0.00';
+                    document.getElementById('b-odonto').textContent = '0.00';
+                }
+
+                // Mostrar modal
+                document.getElementById('modal-funcionario').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Erro ao buscar detalhes do funcionário:', error);
+                // Opcional: exiba uma mensagem de erro para o usuário
+                alert('Não foi possível carregar os detalhes do funcionário. Por favor, tente novamente.');
+            });
+    }
+
+    function fecharModalFuncionario() {
+        document.getElementById('modal-funcionario').style.display = 'none';
     }
 </script>
 

@@ -25,7 +25,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1️⃣  Rotas públicas
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/login",
@@ -36,7 +35,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // 2️⃣  Tela de login + redirecionamento
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
@@ -44,7 +42,6 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // 3️⃣  Logout
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")

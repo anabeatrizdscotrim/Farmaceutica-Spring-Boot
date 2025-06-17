@@ -23,9 +23,9 @@ public class Funcionario {
     private String setor;
     @Column(nullable = false)
     private double salarioBase;
-    @Column(nullable = false)
-    private double salarioLiquid;
-    private double imposto;
+    private double salarioLiquid = 0;
+    private double bonificacao = 0;
+    private double imposto = 0;
 
     public Funcionario() {
     }
@@ -35,10 +35,6 @@ public class Funcionario {
         this.senha = senha;
         this.setor = setor;
     }
-
-    //private double folhaPagamento; *Não sei como fazer isso e se tem que ter atributo
-
-
 
     public Long getIdFuncionario() {
         return idFuncionario;
@@ -106,6 +102,14 @@ public class Funcionario {
 
     public void setSalarioLiquid(double salarioLiquid) {
         this.salarioLiquid = salarioLiquid;
+    }
+
+    public double getBonificacao() {
+        return bonificacao;
+    }
+
+    public void setBonificacao(double bonificacao) {
+        this.bonificacao = bonificacao;
     }
 
     public double getImposto() {
