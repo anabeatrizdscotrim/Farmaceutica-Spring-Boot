@@ -14,9 +14,6 @@ public class Compra {
 
     private String codigoCompra;
 
-    @ManyToOne
-    private Funcionario responsavel;
-
     private double valorTotal;
 
     private boolean status; // true = Em andamento, false = Finalizada
@@ -24,10 +21,6 @@ public class Compra {
     @OneToMany(mappedBy = "compra", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CompraProduto> produtos = new ArrayList<>();
 
-    @PostPersist
-    private void gerarCodigoCompra() {
-        this.codigoCompra = String.format("COMP%05d", this.id);
-    }
 
     public void calcularValorTotal() {
         this.valorTotal = produtos.stream()
@@ -45,14 +38,6 @@ public class Compra {
 
     public void setCodigoCompra(String codigoCompra) {
         this.codigoCompra = codigoCompra;
-    }
-
-    public Funcionario getResponsavel() {
-        return responsavel;
-    }
-
-    public void setResponsavel(Funcionario responsavel) {
-        this.responsavel = responsavel;
     }
 
     public double getValorTotal() {

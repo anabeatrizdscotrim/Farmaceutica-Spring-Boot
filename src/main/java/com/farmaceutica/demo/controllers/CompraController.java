@@ -1,6 +1,7 @@
 package com.farmaceutica.demo.controllers;
 
 import com.farmaceutica.demo.models.Compra;
+import com.farmaceutica.demo.repository.CompraRepository;
 import com.farmaceutica.demo.services.CompraService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,9 @@ public class CompraController {
 
     @Autowired
     private CompraService compraService;
+
+    @Autowired
+    private CompraRepository compraRepository;
 
     @GetMapping
     public String listarCompras(Model model) {
@@ -33,5 +37,11 @@ public class CompraController {
     public String finalizar(@PathVariable Long id) {
         compraService.finalizarCompra(id);
         return "redirect:/compras";
+    }
+
+    @GetMapping("/{id}")
+    @ResponseBody
+    public Compra buscarCompra(@PathVariable Long id) {
+        return compraRepository.findById(id).orElseThrow();
     }
 }

@@ -455,27 +455,16 @@
         <div th:if="${setor == 'GF'}">
             <ul>
                 <li><a href="javascript:void(0)" onclick="loadContent('/funcionarios')">Gerenciar Funcionários</a></li>
-                <li><a th:href="@{/almoxarifado}">Gerenciar Compras</a></li>
-                <li><a th:href="@{/produtos}">Gerenciar Produtos</a></li>
-                <li><a th:href="@{/transportadoras}">Gerenciar Transportadoras</a></li>
-                <li><a th:href="@{/caixa}">Gerenciar Fluxo de Caixa</a></li>
-                <li><a th:href="@{/vendas}">Gerenciar Vendas</a></li>
-                <li><a th:href="@{/relatorios}">Relatórios</a></li>
+                <li><a href="javascript:void(0)" onclick="loadContent('/compras')">Gerenciar Compras</a></li>
+                <li><a href="javascript:void(0)" onclick="loadContent('/produtos')">Gerenciar Estoque</a></li>
+                <li><a href="javascript:void(0)" onclick="loadContent('/transportadoras')">Gerenciar Transportadoras</a></li>
             </ul>
         </div>
 
         <!-- SETOR GP -->
         <div th:if="${setor == 'GP'}">
-            <h3>Gestão de Pessoas</h3>
             <ul>
-                <li>
-                    <a href="javascript:void(0)" onclick="toggleSubmenu(event, 'submenu-funcionarios-gf')">Gerenciar Funcionários</a>
-                    <ul id="submenu-funcionarios-gf" class="submenu" style="display:none; margin-left:15px; list-style:disc;">
-                        <li><a th:href="@{/funcionarios/adicionar}">Adicionar Funcionário</a></li>
-                        <li><a th:href="@{/funcionarios/listar}">Listar Funcionários</a></li>
-                        <li><a th:href="@{/funcionarios/excluir}">Excluir Funcionário</a></li>
-                    </ul>
-                </li>
+                <li><a href="javascript:void(0)" onclick="loadContent('/funcionarios')">Gerenciar Funcionários</a></li>
             </ul>
         </div>
 
@@ -511,7 +500,15 @@
             })
             .then(html => {
                 document.getElementById("main-content").innerHTML = html;
-                inicializarEventos();
+
+                const titulo = document.querySelector("#main-content h2")?.textContent || "";
+
+                if (titulo.includes("Funcionários")) {
+                    inicializarEventosFuncionario();
+                } else if (titulo.includes("Transportadora")) {
+                    inicializarEventosTransportadora();
+                }
+
             })
             .catch(err => {
                 document.getElementById("main-content").innerHTML = "<p>Erro ao carregar o conteúdo.</p>";
@@ -580,7 +577,7 @@
         document.getElementById('modal-editar').style.display = 'none';
     }
 
-    function inicializarEventos() {
+    function inicializarEventosFuncionario() {
         const formAdicionar = document.getElementById('form-adicionar');
         if (formAdicionar) {
             formAdicionar.addEventListener('submit', function (e) {
@@ -635,6 +632,229 @@
                 });
             });
         }
+
+        const titulo = document.querySelector("#main-content h2");
+        if (titulo && titulo.textContent.includes("Gerenciar Compras")) {
+            inicializarEventosCompras();
+        }
+    }
+
+    function inicializarEventosCompras() {
+        let contadorProdutos = 1;
+
+        window.abrirNovaCompraModal = function () {
+            document.getElementById("novaCompraModal").style.display = "block";
+        };
+
+        window.fecharNovaCompraModal = function () {
+            document.getElementById("novaCompraModal").style.display = "none";
+            limparProdutos();
+        };
+
+        window.adicionarProduto = function () {
+            const container = document.getElementById("produtosContainer");
+
+            const novaLinha = document.createElement("div");
+            novaLinha.className = "produto-row";
+
+            novaLinha.innerHTML = `
+            <input type="text" name="itens[${contadorProdutos}].nomeProduto" placeholder="Nome do Produto" required />
+            <input type="number" name="itens[${contadorProdutos}].quantidade" placeholder="Quantidade" min="1" required />
+            <input type="number" step="0.01" name="itens[${contadorProdutos}].precoUnitario" placeholder="Preço Unitário" required />
+            <button type="button" onclick="removerProduto(this)">Remover</button>
+        `;
+
+            container.appendChild(novaLinha);
+            contadorProdutos++;
+        };
+
+        window.removerProduto = function (botao) {
+            botao.parentElement.remove();
+        };
+
+        window.limparProdutos = function () {
+            const container = document.getElementById("produtosContainer");
+            container.innerHTML = `
+            <div class="produto-row">
+                <input type="text" name="itens[0].nomeProduto" placeholder="Nome do Produto" required />
+                <input type="number" name="itens[0].quantidade" placeholder="Quantidade" min="1" required />
+                <input type="number" step="0.01" name="itens[0].precoUnitario" placeholder="Preço Unitário" required />
+                <button type="button" onclick="removerProduto(this)">Remover</button>
+            </div>
+        `;
+            contadorProdutos = 1;
+        };
+    }
+
+    function filtrarTransportadora() {
+        const termo = document.getElementById("termo").value;
+        loadContent(`/transportadoras/filtrar?termo=${encodeURIComponent(termo)}`);
+    }
+
+    function removerTransportadora(id) {
+        idParaRemover = id;
+        document.getElementById('modal-remover').style.display = 'flex';
+    }
+
+    function fecharModalRemover() {
+        idParaRemover = null;
+        document.getElementById('modal-remover').style.display = 'none';
+    }
+
+    function confirmarRemocao() {
+        if (!idParaRemover) return;
+
+        fetch('/transportadoras/remover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `id=${idParaRemover}`
+        }).then(() => {
+            fecharModalRemover();
+            loadContent('/transportadoras');
+        });
+    }
+
+    function abrirModalAdicionarTransportadora() {
+        document.getElementById('modal-adicionar').style.display = 'flex';
+    }
+
+    function fecharModalAdicionar() {
+        document.getElementById('modal-adicionar').style.display = 'none';
+    }
+
+    function abrirModalEditarTransportadora(id) {
+        fetch(`/transportadoras/buscar/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const t = data.transportadora;
+
+                document.getElementById('id-editar').value = t.id;
+                document.getElementById('nome-editar').value = t.nome;
+                document.getElementById('frete-editar').value = t.frete;
+
+                const container = document.getElementById('locais-editar-container');
+                container.innerHTML = '';
+                t.locais.forEach(local => {
+                    const div = document.createElement('div');
+                    div.className = 'local-item';
+                    div.innerHTML = `
+                        <input type="text" class="local-input" value="${local}" required>
+                        <button type="button" onclick="removerLocalEditar(this)">Remover</button>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('modal-editar').style.display = 'flex';
+            });
+    }
+
+    function fecharModalEditar() {
+        document.getElementById('modal-editar').style.display = 'none';
+    }
+
+    function adicionarLocal() {
+        const container = document.getElementById('locais-container');
+        const div = document.createElement('div');
+        div.className = 'local-item';
+        div.innerHTML = `
+            <input type="text" class="local-input" required>
+            <button type="button" onclick="removerLocal(this)">Remover</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removerLocal(botao) {
+        botao.parentElement.remove();
+    }
+
+    function adicionarLocalEditar() {
+        const container = document.getElementById('locais-editar-container');
+        const div = document.createElement('div');
+        div.className = 'local-item';
+        div.innerHTML = `
+            <input type="text" class="local-input" required>
+            <button type="button" onclick="removerLocalEditar(this)">Remover</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removerLocalEditar(botao) {
+        botao.parentElement.remove();
+    }
+
+    function visualizarTransportadora(id) {
+        fetch(`/transportadoras/buscar/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const t = data;
+                document.getElementById('t-nome').textContent = t.nome;
+                document.getElementById('t-frete').textContent = `R$ ${parseFloat(t.frete).toFixed(2)}`;
+                const ul = document.getElementById('t-locais');
+                ul.innerHTML = '';
+                t.locais.forEach(local => {
+                    const li = document.createElement('li');
+                    li.textContent = local;
+                    ul.appendChild(li);
+                });
+                document.getElementById('modal-funcionario').style.display = 'flex';
+            });
+    }
+
+    function fecharModalFuncionario() {
+        document.getElementById('modal-funcionario').style.display = 'none';
+    }
+
+    function inicializarEventosTransportadora() {
+        const formAdicionar = document.getElementById('form-adicionar');
+        if (formAdicionar) {
+            formAdicionar.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const locais = Array.from(document.querySelectorAll('#locais-container .local-input'))
+                    .map(input => input.value);
+
+                const transportadora = {
+                    nome: document.getElementById('nome-adicionar').value,
+                    frete: document.getElementById('frete-adicionar').value,
+                    locais: locais
+                };
+
+                fetch('/transportadoras/salvar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(transportadora)
+                }).then(() => {
+                    fecharModalAdicionar();
+                    loadContent('/transportadoras');
+                });
+            });
+        }
+
+        const formEditar = document.getElementById('form-editar');
+        if (formEditar) {
+            formEditar.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const locais = Array.from(document.querySelectorAll('#locais-editar-container .local-input'))
+                    .map(input => input.value);
+
+                const transportadora = {
+                    id: document.getElementById('id-editar').value,
+                    nome: document.getElementById('nome-editar').value,
+                    frete: document.getElementById('frete-editar').value,
+                    locais: locais
+                };
+
+                fetch('/transportadoras/editar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(transportadora)
+                }).then(() => {
+                    fecharModalEditar();
+                    loadContent('/transportadoras');
+                });
+            });
+        }
     }
 
     function visualizarFuncionario(id) {
@@ -668,12 +888,10 @@
                     document.getElementById('b-odonto').textContent = '0.00';
                 }
 
-                // Mostrar modal
                 document.getElementById('modal-funcionario').style.display = 'block';
             })
             .catch(error => {
                 console.error('Erro ao buscar detalhes do funcionário:', error);
-                // Opcional: exiba uma mensagem de erro para o usuário
                 alert('Não foi possível carregar os detalhes do funcionário. Por favor, tente novamente.');
             });
     }
@@ -682,46 +900,48 @@
         document.getElementById('modal-funcionario').style.display = 'none';
     }
 
-    function abrirNovaCompraModal() {
-        document.getElementById("novaCompraModal").style.display = "block";
+    function abrirModalCompra(compraId) {
+        fetch(`/compras/${compraId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar compra');
+                }
+                return response.json();
+            })
+            .then(compra => {
+                document.getElementById('c-codigo').textContent = compra.codigoCompra || '---';
+                document.getElementById('c-valorTotal').textContent =
+                    compra.valorTotal ? compra.valorTotal.toFixed(2) : '0.00';
+                document.getElementById('c-status').textContent = compra.status || '---';
+
+                const produtosTable = document.getElementById('produtos-compra');
+                produtosTable.innerHTML = '';
+
+                if (Array.isArray(compra.produtos)) {
+                    compra.produtos.forEach(item => {
+                        const subtotal = (item.quantidade * item.valorUnitario) || 0;
+                        const row = `
+                        <tr>
+                            <td>${item.nome}</td>
+                            <td>${item.quantidade}</td>
+                            <td>R$ ${item.valorUnitario.toFixed(2)}</td>
+                            <td>R$ ${subtotal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                        produtosTable.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+
+                document.getElementById('modal-compra').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao carregar os detalhes da compra.');
+            });
     }
 
-    function fecharNovaCompraModal() {
-        document.getElementById("novaCompraModal").style.display = "none";
-    }
-
-    function adicionarProduto() {
-        const container = document.getElementById("produtosContainer");
-
-        const novaLinha = document.createElement("div");
-        novaLinha.className = "produto-row";
-
-        novaLinha.innerHTML = `
-            <input type="text" name="itens[${contadorProdutos}].nomeProduto" placeholder="Nome do Produto" required />
-            <input type="number" name="itens[${contadorProdutos}].quantidade" placeholder="Quantidade" min="1" required />
-            <input type="number" step="0.01" name="itens[${contadorProdutos}].precoUnitario" placeholder="Preço Unitário" required />
-            <button type="button" onclick="removerProduto(this)">Remover</button>
-        `;
-
-        container.appendChild(novaLinha);
-        contadorProdutos++;
-    }
-
-    function removerProduto(botao) {
-        botao.parentElement.remove();
-    }
-
-    function limparProdutos() {
-        const container = document.getElementById("produtosContainer");
-        container.innerHTML = `
-            <div class="produto-row">
-                <input type="text" name="itens[0].nomeProduto" placeholder="Nome do Produto" required />
-                <input type="number" name="itens[0].quantidade" placeholder="Quantidade" min="1" required />
-                <input type="number" step="0.01" name="itens[0].precoUnitario" placeholder="Preço Unitário" required />
-                <button type="button" onclick="removerProduto(this)">Remover</button>
-            </div>
-        `;
-        contadorProdutos = 1;
+    function fecharModalCompra() {
+        document.getElementById('modal-compra').style.display = 'none';
     }
 
 </script>

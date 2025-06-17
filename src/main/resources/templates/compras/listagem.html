@@ -27,7 +27,6 @@
         <thead style="background-color: #007bff; color: white;">
         <tr>
             <th style="padding: 12px; text-align: left;">Código</th>
-            <th style="padding: 12px; text-align: left;">Responsável</th>
             <th style="padding: 12px; text-align: left;">Valor Total</th>
             <th style="padding: 12px; text-align: left;">Status</th>
             <th style="padding: 12px; text-align: left;">Ver</th>
@@ -35,13 +34,12 @@
         </thead>
         <tbody>
         <tr th:each="compra : ${compras}" style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 12px;" th:text="${compra.codigo}">CP-001</td>
-            <td style="padding: 12px;" th:text="${compra.responsavel.nome}">João Silva</td>
+            <td style="padding: 12px;" th:text="${compra.codigoCompra}">CP-001</td>
             <td style="padding: 12px;" th:text="${compra.valorTotal}">R$ 1000,00</td>
             <td style="padding: 12px;" th:text="${compra.status}">Pendente</td>
             <td style="padding: 12px;">
                 <button
-                        th:attr="onclick='visualizarCompra(' + ${compra.idCompra} + ')'"
+                        th:attr="onclick='abrirModalCompra(' + ${compra.id} + ')'"
                         style="padding: 6px 12px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     Visualizar
                 </button>
@@ -58,9 +56,6 @@
 
             <div style="margin-bottom: 10px;">
                 <p><strong>Código:</strong> <span id="c-codigo"></span></p>
-                <p><strong>Data:</strong> <span id="c-data"></span></p>
-                <p><strong>Responsável:</strong> <span id="c-responsavel"></span></p>
-                <p><strong>Fornecedor:</strong> <span id="c-fornecedor"></span></p>
                 <p><strong>Valor Total:</strong> R$ <span id="c-valorTotal"></span></p>
                 <p><strong>Status:</strong> <span id="c-status"></span></p>
             </div>
@@ -76,13 +71,7 @@
                 </tr>
                 </thead>
                 <tbody id="produtos-compra">
-                <!-- Exemplo dinâmico -->
-                <tr>
-                    <td>Produto A</td>
-                    <td>2</td>
-                    <td>R$ 50,00</td>
-                    <td>R$ 100,00</td>
-                </tr>
+                <!-- Conteúdo dinâmico -->
                 </tbody>
             </table>
 
@@ -103,8 +92,7 @@
         </div>
     </div>
 
-
-    <!-- Modal -->
+    <!-- Modal Nova Compra -->
     <div id="novaCompraModal" class="nova-compra-overlay" style="display: none;">
         <div class="nova-compra-container">
             <span class="nova-compra-close" onclick="fecharModalNovaCompra()">&times;</span>

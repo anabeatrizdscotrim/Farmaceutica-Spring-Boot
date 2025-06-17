@@ -27,10 +27,11 @@ public class CompraService {
     public Compra salvarCompra(Compra compra, Long idFuncionario) {
         compra.setStatus(true); // em andamento
 
-        // seta o responsável pela compra
-        compra.setResponsavel(funcionarioService.buscarFuncionarioPorId(idFuncionario));
+        Compra compraSalva = compraRepository.save(compra);
 
-        // garante que os produtos saibam a qual compra pertencem
+        String codigoCopra = String.format("COMP%05d", compraSalva.getId());
+        compraSalva.setCodigoCompra(codigoCopra);
+
         for (CompraProduto cp : compra.getProdutos()) {
             cp.setCompra(compra);
         }
