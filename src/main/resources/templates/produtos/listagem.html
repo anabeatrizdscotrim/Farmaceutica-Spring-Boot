@@ -1,0 +1,86 @@
+<div th:fragment="content">
+    <h2>Gerenciar Estoque</h2>
+
+    <!-- Filtros -->
+    <form method="get" th:action="@{/produtos}" style="margin-bottom: 20px;">
+        <input type="text" name="termo" th:value="${termo}" placeholder="Código ou Nome" />
+        <select name="status">
+            <option th:selected="${status == null}">Status</option>
+            <option th:value="true" th:selected="${status == true}">OK</option>
+            <option th:value="false" th:selected="${status == false}">Reposição Necessária</option>
+        </select>
+        <button type="submit">Filtrar</button>
+    </form>
+
+    <!-- Tabela -->
+    <table border="1" cellspacing="0" cellpadding="5">
+        <thead>
+        <tr>
+            <th>Código</th>
+            <th>Nome</th>
+            <th>Estoque</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="produto : ${produtos}">
+            <td th:text="${produto.codigoProduto}"></td>
+            <td th:text="${produto.nome}"></td>
+            <td th:text="${produto.qtdEstoque}"></td>
+            <td th:text="${produto.status} ? 'OK' : 'Reposição Necessária'"></td>
+            <td>
+                <button type="button" th:onclick="'abrirModal(\'produto-' + ${produto.id} + '\')'">Ver</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Modal Produto -->
+    <div th:each="produto : ${produtos}" th:id="'produto-' + ${produto.id}" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" th:onclick="'fecharModal(\'produto-' + ${produto.id} + '\')'">&times;</span>
+            <h3>Detalhes do Produto</h3>
+            <p><strong>Código:</strong> <span th:text="${produto.codigoProduto}"></span></p>
+            <p><strong>Nome:</strong> <span th:text="${produto.nome}"></span></p>
+            <p><strong>Estoque:</strong> <span th:text="${produto.qtdEstoque}"></span></p>
+            <p><strong>Preço Compra:</strong> <span th:text="${produto.precoCompra}"></span></p>
+            <p><strong>Preço Venda:</strong> <span th:text="${produto.precoVenda}"></span></p>
+            <p><strong>Status:</strong> <span th:text="${produto.status} ? 'OK' : 'Reposição Necessária'"></span></p>
+        </div>
+    </div>
+</div>
+
+<!-- Estilo e JS simples -->
+<style>
+    .modal {
+        position: fixed;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        min-width: 300px;
+    }
+    .close {
+        float: right;
+        cursor: pointer;
+        font-size: 20px;
+    }
+</style>
+
+<script>
+    function abrirModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function fecharModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+</script>
